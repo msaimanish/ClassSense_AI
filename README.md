@@ -73,7 +73,8 @@ ClassSense_AI/
 ├── requirements.txt
 ├── README.md
 └── serviceAccountKey.json  (not committed)
-
+```
+---
 
 ## Setup Instructions
 
