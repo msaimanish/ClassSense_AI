@@ -38,11 +38,29 @@ No retraining is required when new students are added.
 
 ## Google Technologies Used
 
-- Google MediaPipe – Multi-face detection
-- TensorFlow and Keras – Face embedding generation
-- Google Cloud Firestore – Cloud database for students and attendance records
-- Firebase Admin SDK – Secure server-side database access
-- Google Gemini AI (optional enhancement) – Analytics and insights generation
+ClassSense_AI extensively uses Google technologies:
+
+- **Google MediaPipe**  
+  Used for efficient and reliable multi-face detection in real-time video streams.
+
+- **TensorFlow and Keras**  
+  Used to generate face embeddings for identity representation and comparison.
+
+- **Google Cloud Firestore**  
+  Acts as the primary cloud database for storing:
+  - Registered student face embeddings
+  - Attendance records
+  - Confidence scores and timestamps
+
+- **Firebase Admin SDK**  
+  Enables secure server-side access to Firestore from the Flask backend.
+
+- **Google Gemini AI**  
+  Used in the Analytics Dashboard to:
+  - Generate natural-language summaries of attendance trends
+  - Analyze daily and overall attendance patterns
+  - Provide AI-driven insights such as participation consistency
+  - Assist in explaining trends in a human-readable form
 
 ---
 
