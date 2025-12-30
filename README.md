@@ -159,10 +159,10 @@ No retraining is required when new students are added.
 ## Google Technologies Used
 
 - Google MediaPipe – Multi-face detection
-- TensorFlow – Face embedding generation
+- TensorFlow, keras – Face embedding generation
 - Google Cloud Firestore – Cloud database for students and attendance records
 - Firebase Admin SDK – Secure server-side database access
-- Google Gemini AI (optional enhancement) – Analytics and insights generation
+- Google Gemini AI – Analytics and insights generation
 
 ---
 
