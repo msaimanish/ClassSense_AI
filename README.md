@@ -178,22 +178,22 @@ No retraining is required when new students are added.
 
 ## Project Structure
 
-.
+```text
+face-attendance-system/
 ├── app.py
 ├── db/
-│ └── firestore.py
+│   └── firestore.py
 ├── templates/
-│ ├── index.html
-│ ├── attendance.html
-│ └── analytics.html
+│   ├── base.html
+│   ├── index.html
+│   ├── attendance.html
+│   └── analytics.html
 ├── static/
-│ └── styles.css
+│   └── styles.css
 ├── requirements.txt
 ├── README.md
-└── serviceAccountKey.json (not committed)
+└── serviceAccountKey.json  (not committed)
 
-
----
 
 ## Setup Instructions
 
