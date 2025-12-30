@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>ClassSense AI</h1>
+
+<!-- Camera Container -->
+<div class="camera-wrapper">
+    <div class="camera-frame">
+        <img id="video" src="/video_feed?mode=idle" class="camera-video">
+
+        <div class="camera-label">Live Camera Feed</div>
+    </div>
+</div>
+<form id="registerForm" style="text-align:center; margin-bottom:12px;">
+  <input id="studentId" placeholder="Student ID" required />
+  <input id="studentName" placeholder="Student Name" required />
+</form>
+
+<!-- Controls -->
+<div class="button-group">
+    <button onclick="startRegister()">Register Face</button>
+
+    <button onclick="startCamera('detect')">Detect</button>
+    <button onclick="startCamera('attendance')">Give Attendance</button>
+</div>
+
+<script>
+function startCamera(mode) {
+    const video = document.getElementById("video");
+    video.src = `/video_feed?mode=${mode}`;
+}
+
+
+</script>
+
+<script>
+function startRegister() {
+  const id = document.getElementById("studentId").value.trim();
+  const name = document.getElementById("studentName").value.trim();
+  if (!id || !name) {
+    alert("Enter Student ID and Name");
+    return;
+  }
+  const video = document.getElementById("video");
+  video.src = `/video_feed?mode=register&id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+}
+</script>
+
+{% endblock %}
