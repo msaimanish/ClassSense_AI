@@ -179,7 +179,7 @@ No retraining is required when new students are added.
 ## Project Structure
 
 ```text
-face-attendance-system/
+ClassSense_AI/
 ├── app.py
 ├── db/
 │   └── firestore.py
