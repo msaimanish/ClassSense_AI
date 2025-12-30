@@ -10,7 +10,5 @@ __pycache__/
 serviceAccountKey.json
 
 # OS / IDE
-.DS_Store
-.idea/
 .vscode/
 
