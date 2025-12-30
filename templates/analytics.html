@@ -1,7 +1,109 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Analytics</h2>
+<div class="analytics-container">
+    <h2>Analytics Dashboard</h2>
 
-<p>Analytics dashboard coming soon.</p>
+    <h3>Gemini AI Insights</h3>
+
+    <div class="ai-insights-grid">
+        <div class="ai-card">
+            <span class="ai-tag">Overview</span>
+            <p>{{ insights.overview }}</p>
+        </div>
+
+        <div class="ai-card">
+            <span class="ai-tag">Trend</span>
+            <p>{{ insights.trend }}</p>
+        </div>
+
+        <div class="ai-card highlight">
+            <span class="ai-tag">Actionable Insight</span>
+            <p>{{ insights.action }}</p>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Present Today</h3>
+            <p>{{ stats.today_count }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Unique Students</h3>
+            <p>{{ stats.unique_students }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Records</h3>
+            <p>{{ stats.total_records }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Avg Confidence</h3>
+            <p>{{ stats.avg_confidence }}</p>
+        </div>
+    </div>
+
+    <h3>Daily Attendance Trend</h3>
+    <canvas id="trendChart"></canvas>
+
+    
+
+
+    <button class="export-btn" onclick="exportPDF()">Export PDF</button>
+</div>
+
+<!-- SAFE JSON INJECTION -->
+<script id="trend-data" type="application/json">
+{{ trend_data | tojson }}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+    const rawData = document.getElementById("trend-data").textContent.trim();
+    const trendData = rawData ? JSON.parse(rawData) : {};
+
+    const labels = Object.keys(trendData);
+    const values = Object.values(trendData);
+
+    if (labels.length > 0) {
+        const ctx = document.getElementById("trendChart");
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Students Present",
+                    data: values,
+                    borderColor: "#2563eb",
+                    backgroundColor: "rgba(37,99,235,0.2)",
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+
+    function exportPDF() {
+        const element = document.querySelector(".analytics-container");
+        html2pdf()
+            .set({
+                margin: 0.5,
+                filename: "attendance_analytics.pdf",
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+            })
+            .from(element)
+            .save();
+    }
+</script>
 {% endblock %}

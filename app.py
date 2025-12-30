@@ -3,6 +3,9 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from collections import defaultdict
+from datetime import datetime
+from google import genai
 import time
 import numpy as np
 import os
@@ -20,7 +23,20 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 app = Flask(__name__)
 
+# -----------------------------
+# Gemini Client
+# -----------------------------
+genai_client = None
+if os.getenv("GOOGLE_API_KEY"):
+    try:
+        genai_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+        print("Gemini client initialized")
+    except Exception as e:
+        print("Gemini init failed:", e)
+
+# -----------------------------
 # MediaPipe Face Detector
+# -----------------------------
 options = vision.FaceDetectorOptions(
     base_options=python.BaseOptions(
         model_asset_path="face_detector.tflite"
@@ -31,15 +47,19 @@ options = vision.FaceDetectorOptions(
 
 face_detector = vision.FaceDetector.create_from_options(options)
 
+# -----------------------------
 # Face Embedding Model
+# -----------------------------
 embedder = FaceNet()
 
 # -----------------------------
 # Webcam
-
-cap = cv2.VideoCapture(0)
+# -----------------------------
+cap = cv2.VideoCapture(2, cv2.CAP_V4L2)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap.set(cv2.CAP_PROP_FPS, 30)
+
 
 # -----------------------------
 # Globals
@@ -50,11 +70,10 @@ attendance_marked = set()
 status_message = ""
 SIMILARITY_THRESHOLD = 0.6
 
-# Register state
 register_start_time = None
 registration_done = False
 registration_done_time = None
-last_embed_time = 0   # throttle embeddings
+last_embed_time = 0
 
 # -----------------------------
 # Helpers
@@ -67,21 +86,121 @@ def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 # -----------------------------
-# UI ROUTES
+# ROUTES
 # -----------------------------
 @app.route("/")
 def main():
     return render_template("index.html")
-
-@app.route("/analytics")
-def analytics():
-    return render_template("analytics.html")
 
 @app.route("/attendance")
 def attendance_page():
     records = get_attendance()
     return render_template("attendance.html", records=records)
 
+@app.route("/analytics")
+def analytics():
+    records = get_attendance()
+
+    if not records:
+        return render_template(
+            "analytics.html",
+            stats={
+                "total_records": 0,
+                "unique_students": 0,
+                "today_count": 0,
+                "avg_confidence": 0
+            },
+            trend_data={},
+            insights={
+                "overview": "No attendance data available yet.",
+                "trend": "Attendance trends will appear once records are created.",
+                "action": "Start marking attendance to unlock analytics."
+            }
+        )
+
+    unique_students = set()
+    today = datetime.utcnow().date()
+    today_present = set()
+
+    for r in records:
+        unique_students.add(r["student_id"])
+        if r["timestamp"].date() == today:
+            today_present.add(r["student_id"])
+
+    stats = {
+        "total_records": len(records),
+        "unique_students": len(unique_students),
+        "today_count": len(today_present),
+        "avg_confidence": round(
+            sum(r["confidence"] for r in records) / len(records), 2
+        )
+    }
+
+    per_day = defaultdict(set)
+    for r in records:
+        per_day[r["timestamp"].date()].add(r["student_id"])
+
+    trend_data = {
+        day.strftime("%Y-%m-%d"): len(students)
+        for day, students in sorted(per_day.items())
+    }
+
+    # -----------------------------
+    # Default Insights (always safe)
+    # -----------------------------
+    insights = {
+        "overview": f"{stats['unique_students']} unique students recorded across {len(trend_data)} days.",
+        "trend": "Attendance remains generally stable with normal daily variation.",
+        "action": "Review low-attendance days to improve engagement or scheduling."
+    }
+
+    # -----------------------------
+    # Gemini AI Enhancement
+    # -----------------------------
+    if genai_client:
+        try:
+            prompt = f"""
+                You are an AI analytics assistant for a university classroom attendance system.
+
+                Context:
+                This data comes from real-time facial recognition-based attendance.
+
+                Attendance statistics:
+                {stats}
+
+                Daily attendance trend:
+                {trend_data}
+
+                Instructions:
+                - Write a detailed but clear overview (2-3 sentences)
+                - Explain attendance trends with reasoning (2-3 sentences)
+                - Give a practical, actionable recommendation (2-3 sentences)
+                - Avoid bullet points
+                - Write in a professional, analytical tone
+            """
+
+
+            response = genai_client.models.generate_content(
+                model="gemini-3-flash",
+                contents=prompt
+            )
+
+            if response and response.text:
+                lines = [l.strip() for l in response.text.split("\n") if l.strip()]
+                if len(lines) >= 3:
+                    insights["overview"] = lines[0]
+                    insights["trend"] = lines[1]
+                    insights["action"] = lines[2]
+
+        except Exception as e:
+            print("Gemini skipped:", e)
+
+    return render_template(
+        "analytics.html",
+        stats=stats,
+        trend_data=trend_data,
+        insights=insights
+    )
 
 # -----------------------------
 # VIDEO FEED
@@ -109,7 +228,6 @@ def generate_frames(mode, student_id=None, student_name=None):
     if mode in ("detect", "attendance") and not registered_students:
         registered_students = get_all_students()
         attendance_marked.clear()
-        print(f"Loaded {len(registered_students)} students")
 
     if mode == "register" and register_start_time is None and not registration_done:
         register_start_time = time.time()
@@ -143,9 +261,9 @@ def generate_frames(mode, student_id=None, student_name=None):
                     if face.size == 0:
                         continue
 
-                    # ---------- REGISTER ----------
+                    # REGISTER
                     if mode == "register" and student_id and student_name:
-                        if not registration_done and register_start_time is not None:
+                        if not registration_done:
                             elapsed = int(time.time() - register_start_time)
                             status_message = f"Registering... ({elapsed}s)"
 
@@ -165,11 +283,11 @@ def generate_frames(mode, student_id=None, student_name=None):
                                 registration_done_time = time.time()
                                 register_start_time = None
 
-                    # ---------- DETECT / ATTENDANCE ----------
+                    # DETECT / ATTENDANCE
                     if mode in ("detect", "attendance") and registered_students:
                         now = time.time()
                         if now - last_embed_time < 0.4:
-                            continue  # throttle heavy inference
+                            continue
                         last_embed_time = now
 
                         face = cv2.resize(face, (160, 160))
@@ -190,16 +308,15 @@ def generate_frames(mode, student_id=None, student_name=None):
                         if best_match and best_score > SIMILARITY_THRESHOLD:
                             sid = best_match["id"]
 
-                            if mode == "attendance":
-                                if sid not in attendance_marked:
-                                    mark_attendance(
-                                        sid,
-                                        best_match["name"],
-                                        float(best_score)
-                                    )
-                                    attendance_marked.add(sid)
+                            if mode == "attendance" and sid not in attendance_marked:
+                                mark_attendance(
+                                    sid,
+                                    best_match["name"],
+                                    float(best_score)
+                                )
+                                attendance_marked.add(sid)
                                 status_message = "Attendance Posted"
-                            else:
+                            elif mode == "detect":
                                 status_message = ""
 
                             cv2.putText(
@@ -207,9 +324,9 @@ def generate_frames(mode, student_id=None, student_name=None):
                                 sid,
                                 (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX,
-                                0.6,
-                                (0, 255, 0) if mode == "attendance" else (255, 255, 0),
-                                2
+                                1.8,
+                                (0, 255, 0),
+                                3
                             )
                         else:
                             status_message = (
@@ -218,7 +335,6 @@ def generate_frames(mode, student_id=None, student_name=None):
                                 else "Not Detected"
                             )
 
-            # ---------- CLEAR REGISTER MESSAGE ----------
             if registration_done and registration_done_time:
                 if time.time() - registration_done_time > 2:
                     status_message = ""
@@ -227,7 +343,7 @@ def generate_frames(mode, student_id=None, student_name=None):
 
         except Exception as e:
             print("ERROR:", e)
-            status_message = "Processing error"
+            pass
 
         cv2.putText(
             frame,
