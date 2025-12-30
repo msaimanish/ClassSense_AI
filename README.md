@@ -1,4 +1,4 @@
-# Face Recognition Attendance System
+# ClassSense_AI
 
 A real-time facial recognition–based classroom attendance system built to address proxy attendance, inefficiency, and scalability issues in large classrooms. The system uses computer vision and cloud technologies from Google to automatically detect, recognize, and record student attendance.
 
