@@ -3,9 +3,9 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from google import genai
 from collections import defaultdict
 from datetime import datetime
-from google import genai
 import time
 import numpy as np
 import os
@@ -23,20 +23,16 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 app = Flask(__name__)
 
-# -----------------------------
-# Gemini Client
-# -----------------------------
 genai_client = None
+
 if os.getenv("GOOGLE_API_KEY"):
     try:
         genai_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-        print("Gemini client initialized")
+        print("Gemini initialized")
     except Exception as e:
         print("Gemini init failed:", e)
 
-# -----------------------------
-# MediaPipe Face Detector
-# -----------------------------
+
 options = vision.FaceDetectorOptions(
     base_options=python.BaseOptions(
         model_asset_path="face_detector.tflite"
@@ -47,23 +43,13 @@ options = vision.FaceDetectorOptions(
 
 face_detector = vision.FaceDetector.create_from_options(options)
 
-# -----------------------------
-# Face Embedding Model
-# -----------------------------
+
 embedder = FaceNet()
 
-# -----------------------------
-# Webcam
-# -----------------------------
-cap = cv2.VideoCapture(2, cv2.CAP_V4L2)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap.set(cv2.CAP_PROP_FPS, 30)
+
+cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
 
 
-# -----------------------------
-# Globals
-# -----------------------------
 registered_students = []
 attendance_marked = set()
 
@@ -75,9 +61,6 @@ registration_done = False
 registration_done_time = None
 last_embed_time = 0
 
-# -----------------------------
-# Helpers
-# -----------------------------
 def cosine_similarity(a, b):
     a = np.asarray(a, dtype=np.float32)
     b = np.asarray(b, dtype=np.float32)
@@ -85,9 +68,7 @@ def cosine_similarity(a, b):
         return -1.0
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
-# -----------------------------
-# ROUTES
-# -----------------------------
+
 @app.route("/")
 def main():
     return render_template("index.html")
@@ -145,48 +126,40 @@ def analytics():
         for day, students in sorted(per_day.items())
     }
 
-    # -----------------------------
-    # Default Insights (always safe)
-    # -----------------------------
     insights = {
         "overview": f"{stats['unique_students']} unique students recorded across {len(trend_data)} days.",
         "trend": "Attendance remains generally stable with normal daily variation.",
         "action": "Review low-attendance days to improve engagement or scheduling."
     }
 
-    # -----------------------------
-    # Gemini AI Enhancement
-    # -----------------------------
+
     if genai_client:
         try:
             prompt = f"""
-                You are an AI analytics assistant for a university classroom attendance system.
+You are an AI analytics assistant for a university classroom attendance system.
 
-                Context:
-                This data comes from real-time facial recognition-based attendance.
+Attendance statistics:
+{stats}
 
-                Attendance statistics:
-                {stats}
+Daily attendance trend:
+{trend_data}
 
-                Daily attendance trend:
-                {trend_data}
+Write:
+1. Overview (2-3 sentences)
+2. Trend explanation (2-3 sentences)
+3. Actionable recommendation (2-3 sentences)
 
-                Instructions:
-                - Write a detailed but clear overview (2-3 sentences)
-                - Explain attendance trends with reasoning (2-3 sentences)
-                - Give a practical, actionable recommendation (2-3 sentences)
-                - Avoid bullet points
-                - Write in a professional, analytical tone
-            """
-
+No bullet points. Professional tone.
+"""
 
             response = genai_client.models.generate_content(
-                model="gemini-3-flash",
-                contents=prompt
-            )
+    model="gemini-1.5-flash",
+    contents=prompt
+)
 
-            if response and response.text:
+            if response and hasattr(response, "text") and response.text:
                 lines = [l.strip() for l in response.text.split("\n") if l.strip()]
+
                 if len(lines) >= 3:
                     insights["overview"] = lines[0]
                     insights["trend"] = lines[1]
@@ -202,9 +175,7 @@ def analytics():
         insights=insights
     )
 
-# -----------------------------
-# VIDEO FEED
-# -----------------------------
+
 @app.route("/video_feed")
 def video_feed():
     mode = request.args.get("mode", "idle")
@@ -216,9 +187,7 @@ def video_feed():
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
-# -----------------------------
-# FRAME GENERATOR
-# -----------------------------
+
 def generate_frames(mode, student_id=None, student_name=None):
     global status_message
     global registered_students, attendance_marked
@@ -261,7 +230,7 @@ def generate_frames(mode, student_id=None, student_name=None):
                     if face.size == 0:
                         continue
 
-                    # REGISTER
+
                     if mode == "register" and student_id and student_name:
                         if not registration_done:
                             elapsed = int(time.time() - register_start_time)
@@ -283,7 +252,7 @@ def generate_frames(mode, student_id=None, student_name=None):
                                 registration_done_time = time.time()
                                 register_start_time = None
 
-                    # DETECT / ATTENDANCE
+
                     if mode in ("detect", "attendance") and registered_students:
                         now = time.time()
                         if now - last_embed_time < 0.4:
@@ -374,8 +343,6 @@ def generate_frames(mode, student_id=None, student_name=None):
             + b"\r\n"
         )
 
-# -----------------------------
-# RUN
-# -----------------------------
+
 if __name__ == "__main__":
     app.run(debug=False, threaded=True)

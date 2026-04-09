@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>ClassSense AI</h1>
 
-<!-- Camera Container -->
+
 <div class="camera-wrapper">
     <div class="camera-frame">
         <img id="video" src="/video_feed?mode=idle" class="camera-video">
@@ -16,7 +15,6 @@
   <input id="studentName" placeholder="Student Name" required />
 </form>
 
-<!-- Controls -->
 <div class="button-group">
     <button onclick="startRegister()">Register Face</button>
 

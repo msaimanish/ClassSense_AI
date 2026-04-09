@@ -7,17 +7,30 @@
 </head>
 <body>
 
-    <!-- Navbar -->
     <nav class="navbar">
-        <a href="/">Main</a>
-        <a href="/attendance">Attendance Registry</a>
-        <a href="/analytics">Analytics</a>
-    </nav>
+    <div class="nav-container">
+        <div class="nav-logo">ClassSense AI</div>
 
-    <!-- Page Content -->
+        <div class="nav-links">
+            <a href="/" class="nav-item">Main</a>
+            <a href="/attendance" class="nav-item">Attendance</a>
+            <a href="/analytics" class="nav-item">Analytics</a>
+        </div>
+    </div>
+</nav>
+
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+
+    <script>
+    const links = document.querySelectorAll(".nav-item");
+    links.forEach(link => {
+        if (link.href === window.location.href) {
+            link.classList.add("active");
+        }
+    });
+</script>
 
 </body>
 </html>

@@ -2,18 +2,12 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
 
-# -------------------------
-# INITIALIZE FIREBASE (ONCE)
-# -------------------------
 if not firebase_admin._apps:
     cred = credentials.Certificate("serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# -------------------------
-# STUDENTS COLLECTION
-# -------------------------
 def student_exists(student_id):
     return db.collection("students").document(student_id).get().exists
 
@@ -21,7 +15,7 @@ def student_exists(student_id):
 def save_student(student_id, name, embedding):
     db.collection("students").document(student_id).set({
         "name": name,
-        "embedding": embedding,   # list[float]
+        "embedding": embedding,  
         "created_at": firestore.SERVER_TIMESTAMP
     })
 
@@ -38,9 +32,6 @@ def get_all_students():
         })
     return students
 
-# -------------------------
-# ATTENDANCE COLLECTION
-# -------------------------
 def mark_attendance(student_id, name, confidence):
     db.collection("attendance").add({
         "student_id": student_id,

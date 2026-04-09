@@ -1,4 +1,4 @@
-:root {      /* bluish black */
+:root {     
     --bg-soft: #10192d;
     --sky-blue: #38bdf8;
 }
@@ -35,27 +35,94 @@ h1 {
 }
 
 
-.navbar {
-    display: flex;
-    justify-content: center;
-    gap: 32px;
-    padding: 20px;
-    background: var(--bg-soft);
+#registerForm input {
+    background: white;
+    border: 1px solid #d1d5db;
+    color: #1f2937;
+    padding: 12px 14px;
+    margin: 6px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    transition: 0.2s;
 }
 
-.navbar a {
-    color: var(--sky-blue);
+#registerForm input::placeholder {
+    color: #9ca3af;
+}
+
+#registerForm input:focus {
+    border-color: var(--blue-main);
+    box-shadow: 0 0 6px rgba(37, 99, 235, 0.3);
+    outline: none;
+}
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(14px);
+    background: None;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: Black;
+    letter-spacing: 1px;
+    text-shadow: 0 0 12px rgba(56,189,248,0.5);
+}
+
+.nav-links {
+    display: flex;
+    gap: 18px;
+}
+
+.nav-item {
+    position: relative;
+    color: #000000;
     text-decoration: none;
     font-weight: 600;
-    font-size: 1.3rem;
-    padding: 10px 20px;
-    border-radius: 14px;
-    background: var(--bg-soft);
-    transition: all 0.2s ease;
+    padding: 10px 18px;
+    border-radius: 10px;
+    transition: all 0.25s ease;
 }
 
-.navbar a:hover {
-    color: #ffffff;
+.nav-item:hover {
+    color: rgb(0, 0, 0);
+    background: rgba(56, 189, 248, 0.15);
+    box-shadow: 0 0 12px rgba(56,189,248,0.4);
+}
+
+.nav-item::after {
+    content: "";
+    position: absolute;
+    left: 20%;
+    bottom: 6px;
+    width: 60%;
+    height: 2px;
+    background: black;
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.nav-item:hover::after {
+    transform: scaleX(1);
+}
+
+.nav-item.active {
+    color: rgb(0, 0, 0);
+    background: rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 14px rgba(56,189,248,0.6);
 }
 
 
@@ -101,18 +168,18 @@ h1 {
 }
 
 .camera-frame {
-    background: #111;
+    background: #000000;
     padding: 12px;
     border-radius: 12px;
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
     width: 80%;
-    max-width: 900px;
+    max-width: 700px;
 }
 
-/* 🔥 THIS IS THE KEY FIX */
+
 .camera-video {
     width: 100%;
-    aspect-ratio: 16 / 9;   /* forces visible height */
+    aspect-ratio: 16 / 9;   
     object-fit: cover;
     display: block;
     border-radius: 8px;
@@ -254,7 +321,6 @@ button {
     cursor: pointer;
 }
 
-/* ---------- Analytics Page ---------- */
 .analytics-container {
     max-width: 1100px;
     margin: 40px auto;
@@ -287,7 +353,6 @@ button {
     color: #1f2937;
 }
 
-/* ---------- AI Insights ---------- */
 .ai-box {
     background: #0f172a;
     color: #e5e7eb;
@@ -306,7 +371,6 @@ button {
     overflow-y: auto;
 }
 
-/* ---------- Export Button ---------- */
 .export-btn {
     margin-top: 30px;
     padding: 12px 22px;
@@ -322,7 +386,6 @@ button {
     background: #1e40af;
 }
 
-/* ---------- Gemini AI Insights ---------- */
 .ai-insights-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
